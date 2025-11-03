@@ -16,6 +16,6 @@ app.use(express.json())
 app.use(cors())
 
 // api endpoints
-app.use('/api/v1/addmin', addminRouter)  // localhost:5000/api/v1/addmin/add-doctor
+app.use('/api/v1/admin', addminRouter)  // localhost:5000/api/v1/addmin/add-doctor
 
 app.listen(port , () => console.log("Server started" , port))
