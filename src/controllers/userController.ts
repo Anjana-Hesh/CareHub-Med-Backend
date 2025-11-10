@@ -4,6 +4,8 @@ import bcrypt from "bcrypt";
 import userModel from "../models/userModel";
 import jwt from "jsonwebtoken";
 import {v2 as cloudinary} from 'cloudinary'
+import doctorModel from "../models/doctorModel";
+import appointmentModel from "../models/appointmentModel";
 
 export const registerUser = async (req: Request, resp: Response) => {
   try {
@@ -152,6 +154,75 @@ export const updateProfile = async (req: Request, resp: Response) => {
     resp.json({
       success: true,
       message: "Profile updated.."
+    })
+
+  } catch (error: any) {
+      console.error(error);
+      resp.status(500).json({
+        success: false,
+        message: error.message,
+      });
+  }
+
+}
+
+// API to book appointment
+export const bookAppointment = async  (req: Request, resp: Response) => {
+
+  try {
+    
+    const { userId, docId, slotDate, slotTime} = req.body
+
+    const docData = await doctorModel.findById(docId).select('-password')
+
+    if (!docData.available) {
+        return resp.json({
+          success: false,
+          message: "Doctor not available"
+        })
+    }
+
+    let slots_booked = docData.slots_booked
+
+    // checkin for slots availability
+    if (slots_booked[slotDate]) {
+       if (slots_booked[slotDate].includes(slotTime)) {
+         return resp.json({
+          success: false,
+          message: "Slot not available"
+        })
+       } else {
+        slots_booked[slotDate].push(slotTime)
+       }
+    } else {
+       slots_booked[slotDate] = []
+       slots_booked[slotDate].push(slotTime)
+    }
+
+    const userData = await userModel.findById(userId).select('-password')
+
+    delete docData.slots_booked
+
+    const appointmentData = {
+      userId,
+      docId,
+      userData,
+      docData,
+      amount: docData.fees,
+      slotTime,
+      slotDate,
+      date: Date.now()
+    }
+
+    const newAppointment = new appointmentModel(appointmentData)
+    await newAppointment.save()
+
+    // save new slots data in docData
+    await doctorModel.findByIdAndUpdate(docId,{slots_booked})
+
+    resp.json({
+      success: true,
+      message: 'Appointment booked successfull ..'
     })
 
   } catch (error: any) {
