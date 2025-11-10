@@ -1,7 +1,7 @@
 import { Request, Response } from "express"
 import doctorModel from "../models/doctorModel"
 
-const changeAvailability = async (req: Request,resp: Response) => {
+export const changeAvailability = async (req: Request,resp: Response) => {
     try {
         
         const {docId} = req.body
@@ -13,7 +13,7 @@ const changeAvailability = async (req: Request,resp: Response) => {
             message: "Availability changed ..."
         })
 
-    } catch (error) {
+    } catch (error: any) {
         console.log(error)
         resp.json({
             success: false,
@@ -22,4 +22,22 @@ const changeAvailability = async (req: Request,resp: Response) => {
     }
 }
 
-export default changeAvailability
+export const doctorList = async (req: Request,resp: Response) => {
+     try {
+        
+        const doctors =  await doctorModel.find({}).select(['-password', '-email'])   // remove password and email saving
+        resp.status(200).json({
+            success : true,
+            doctors
+        })
+
+     } catch (error: any) {
+        console.log(error)
+        resp.status(500).json({
+            success: false,
+            message:error.message
+        })
+     }
+}
+
+// export default {changeAvailability , doctorList};
