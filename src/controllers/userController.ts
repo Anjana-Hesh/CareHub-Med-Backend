@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import {v2 as cloudinary} from 'cloudinary'
 import doctorModel from "../models/doctorModel";
 import appointmentModel from "../models/appointmentModel";
+import { error } from "console";
 
 export const registerUser = async (req: Request, resp: Response) => {
   try {
@@ -233,4 +234,25 @@ export const bookAppointment = async  (req: Request, resp: Response) => {
       });
   }
 
+}
+
+// API to get user Appointments for frontend my-appointment page
+export const listAppointment = async (req: Request, resp: Response) => {
+  try {
+    
+    const { userId } = req.body
+    const appointments = await appointmentModel.find({userId})
+
+    resp.json({
+      success: true,
+      appointments
+    })
+
+  } catch (error: any) {
+      console.error(error);
+      resp.status(500).json({
+        success: false,
+        message: error.message,
+      });
+  }
 }
