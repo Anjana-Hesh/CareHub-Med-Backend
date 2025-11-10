@@ -15,7 +15,12 @@ const authUser = async (req: Request, resp: Response, next: NextFunction) => {
 
         const token_decode = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
 
-        req.body.userId = token_decode.id
+        // Initialize req.body if it doesn't exist (important for GET requests)
+        if (!req.body) {
+            req.body = {};
+        }
+        
+        req.body.userId = token_decode.id;
         next();
 
     } catch (error) {
@@ -39,7 +44,7 @@ const authUser = async (req: Request, resp: Response, next: NextFunction) => {
 
         return resp.status(500).json({
             success: false,
-            message: "Admin auth issue",
+            message: "User auth issue",
             error: error instanceof Error ? error.message : error
         });
     }
