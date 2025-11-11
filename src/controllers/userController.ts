@@ -256,3 +256,48 @@ export const listAppointment = async (req: Request, resp: Response) => {
       });
   }
 }
+
+// API to cancel appointment
+export const cancelAppintment = async (req: Request, resp: Response) => {
+
+  try {
+
+    const { userId , appointmentId } = req.body
+
+    const appointmentData = await appointmentModel.findById(appointmentId)
+
+    // verify appointment user
+    if (appointmentData.userId !== userId) {
+       return resp.json({
+        success: false,
+        message: "Un-authorized action"
+       })
+    }
+
+    await appointmentModel.findByIdAndUpdate(appointmentId, {cancelled: true})
+
+    // releasing doctor slot
+    const {docId, slotDate, slotTime} = appointmentData
+
+    const doctorData = await doctorModel.findById(docId)
+
+    let slots_booked = doctorData.slots_booked
+
+    slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
+
+    await doctorModel.findByIdAndUpdate(docId, {slots_booked})
+
+    resp.json({
+      success: true,
+      message: 'Appointment cancelled'
+    })
+    
+  } catch (error: any) {
+      console.error(error);
+      resp.status(500).json({
+        success: false,
+        message: error.message,
+      });
+  }
+
+}
