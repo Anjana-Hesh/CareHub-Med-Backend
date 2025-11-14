@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 import {v2 as cloudinary} from 'cloudinary'
 import doctorModel from "../models/doctorModel";
 import appointmentModel from "../models/appointmentModel";
-import { error } from "console";
 
 export const registerUser = async (req: Request, resp: Response) => {
   try {
