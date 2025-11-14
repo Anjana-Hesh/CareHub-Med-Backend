@@ -217,4 +217,51 @@ export const doctorDashboard = async (req: Request,resp: Response) => {
 
 }
 
+// API to get doctor profile for doctor panel
+export const doctorProfile = async (req: Request,resp: Response) => {
+
+    try {
+
+        const {docId} = req.body
+        const profileData = await doctorModel.findById(docId).select('-password')
+
+        resp.json({
+            success: true,
+            profileData
+        })
+
+    } catch (error:any) {
+        console.log(error)
+        resp.status(500).json({
+            success: false,
+            message:error.message
+        })
+    }
+
+}
+
+// API to update doctor profile data from doctor panel
+export const updateDoctorProfile = async (req: Request,resp: Response) => {
+
+    try {
+
+        const { docId , fees , address , available } = req.body
+
+        await doctorModel.findByIdAndUpdate(docId, {fees, address , available})
+
+        resp.json({
+            success: true,
+            message: "Profile updated"
+        })
+        
+    } catch (error:any) {
+        console.log(error)
+        resp.status(500).json({
+            success: false,
+            message:error.message
+        })
+    }
+
+}
+
 // export default {changeAvailability , doctorList};
