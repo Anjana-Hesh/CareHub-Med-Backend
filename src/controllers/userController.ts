@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import {v2 as cloudinary} from 'cloudinary'
 import doctorModel from "../models/doctorModel";
 import appointmentModel from "../models/appointmentModel";
+import { signAccessToken } from "../utils/token";
 
 export const registerUser = async (req: Request, resp: Response) => {
   try {
@@ -79,6 +80,8 @@ export const loginUser = async (req: Request, resp: Response) => {
         
         if (isMatch) {
             const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: "30min" })  // ! non null asserted
+            // const token = signAccessToken(user)
+
             resp.json({
                 success: true,
                 token
