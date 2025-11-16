@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken"
 import { error } from "console"
 import appointmentModel from "../models/appointmentModel"
 import userModel from "../models/userModel"
+import { signAccessToken } from "../utils/token"
 
 // Api for adding doctor
 const addDoctor = async (req: Request , resp: Response) => {
@@ -96,6 +97,7 @@ const loginAdmin = async (req:Request , resp:Response) => {
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
             
             const token = jwt.sign({ email, password }, process.env.JWT_SECRET as string, { expiresIn: "30m" });
+            // const token = signAccessToken()
 
             resp.status(200).json({
                 success:true,
@@ -104,7 +106,7 @@ const loginAdmin = async (req:Request , resp:Response) => {
             })
 
         } else {
-            resp.status(401).json({
+            resp.json({
                 success:false,
                 message: "Invalid credensials ..."
             })
