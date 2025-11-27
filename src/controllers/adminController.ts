@@ -4,7 +4,6 @@ import bcrypt from 'bcrypt'
 import {v2 as cloudinary} from "cloudinary"
 import doctorModel from "../models/doctorModel"
 import jwt from "jsonwebtoken"
-import { error } from "console"
 import appointmentModel from "../models/appointmentModel"
 import {User} from "../models/userModel"
 import { signAccessToken } from "../utils/token"
@@ -87,41 +86,6 @@ const addDoctor = async (req: Request , resp: Response) => {
     }
 }
 
-// API for the admin login
-// const loginAdmin = async (req:Request , resp:Response) => {
-
-//     try{
-
-//         const {email , password} = req.body
-
-//         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            
-//             const token = jwt.sign({ email, password }, process.env.JWT_SECRET as string, { expiresIn: "30m" });
-//             // const token = signAccessToken()
-
-//             resp.status(200).json({
-//                 success:true,
-//                 message: "Success fully Login ...",
-//                 token: token
-//             })
-
-//         } else {
-//             resp.json({
-//                 success:false,
-//                 message: "Invalid credensials ..."
-//             })
-//         }
-
-//     }catch (error){
-//         console.log(error)
-//         resp.status(500).json({
-//             success:false,
-//             message: "Doctor adding error, ", error
-//         })
-//     }
-// }
-
-// API to get all doctors list for admin panel 
 const allDoctors = async (req: Request , resp: Response) => {
     try {
         
