@@ -14,14 +14,16 @@ const authDoctor = async (req: Request, resp: Response, next: NextFunction) => {
             });
         }
 
-        const token_decode = jwt.verify(dtoken, process.env.JWT_SECRET as string) as { id: string };
+        // const token_decode = jwt.verify(dtoken, process.env.JWT_SECRET as string) as { id: string };
+        const token_decode = jwt.verify(dtoken, process.env.JWT_SECRET as string) as { sub: string; roles: string[] };
+        
 
         // Initialize req.body if it doesn't exist (important for GET requests)
         if (!req.body) {
             req.body = {};
         }
         
-        req.body.docId = token_decode.id;
+        req.body.docId = token_decode.sub;
         next();
 
     } catch (error) {

@@ -13,9 +13,9 @@ const authAdmin = async (req: Request, resp: Response, next: NextFunction) => {
             });
         }
 
-        const token_decode = jwt.verify(atoken, process.env.JWT_SECRET as string) as { email: string };
+        const token_decode = jwt.verify(atoken, process.env.JWT_SECRET as string) as { sub: string; roles: string[] };
 
-        if (token_decode.email !== process.env.ADMIN_EMAIL) {
+        if (!token_decode.roles.includes('ADMIN')) {
             return resp.status(401).json({
                 success: false,
                 message: "Not authorized. Invalid admin token."

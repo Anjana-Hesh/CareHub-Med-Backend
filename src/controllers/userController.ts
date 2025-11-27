@@ -1,107 +1,108 @@
 import { Request, Response } from "express";
 import validator from "validator";
 import bcrypt from "bcrypt";
-import userModel from "../models/userModel";
+import {User , IUSER} from "../models/userModel";
 import jwt from "jsonwebtoken";
 import {v2 as cloudinary} from 'cloudinary'
 import doctorModel from "../models/doctorModel";
 import appointmentModel from "../models/appointmentModel";
 import { signAccessToken } from "../utils/token";
 
-export const registerUser = async (req: Request, resp: Response) => {
-  try {
-    const { name, email, password } = req.body;
+// export const registerUser = async (req: Request, resp: Response) => {
+//   try {
+//     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return resp.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
-    }
+//     if (!name || !email || !password) {
+//       return resp.status(400).json({
+//         success: false,
+//         message: "Missing required fields",
+//       });
+//     }
 
-    if (!validator.isEmail(email)) {
-      return resp.status(400).json({
-        success: false,
-        message: "Enter a valid email",
-      });
-    }
+//     if (!validator.isEmail(email)) {
+//       return resp.status(400).json({
+//         success: false,
+//         message: "Enter a valid email",
+//       });
+//     }
 
-    if (password.length < 8) {
-      return resp.status(400).json({
-        success: false,
-        message: "Enter a strong password (minimum 8 characters)",
-      });
-    }
+//     if (password.length < 8) {
+//       return resp.status(400).json({
+//         success: false,
+//         message: "Enter a strong password (minimum 8 characters)",
+//       });
+//     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+//     // Hash password
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = new userModel({
-      name,
-      email,
-      password: hashedPassword,
-    });
+//     const newUser = new userModel({
+//       name,
+//       email,
+//       password: hashedPassword,
+//     });
 
-    const user = await newUser.save();
+//     const user = await newUser.save();
 
-    // Generate JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: "1d" });
+//     // Generate JWT
+//     // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: "1d" });
 
-    resp.status(201).json({
-      success: true,
-      token,
-    });
-  } catch (error: any) {
-    console.error(error);
-    resp.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+//     resp.status(201).json({
+//       success: true,
+//       // token,
+//     });
+//   } catch (error: any) {
+//     console.error(error);
+//     resp.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
 
 // API for user Login
-export const loginUser = async (req: Request, resp: Response) => {
+// export const loginUser = async (req: Request, resp: Response) => {
 
-    try {
+//     try {
 
-        const { email , password} = req.body
-        const user = await userModel.findOne({email})
+//         const { email , password} = req.body
+//         const user = await userModel.findOne({email})
 
-        if (!user) {
-            return resp.json({
-            success: false,
-            message: "user doesn't exist",
-            });
-        }
+//         if (!user) {
+//             return resp.json({
+//             success: false,
+//             message: "user doesn't exist",
+//             });
+//         }
 
-        const isMatch = await bcrypt.compare(password,user.password)
+//         const isMatch = await bcrypt.compare(password,user.password)
         
-        if (isMatch) {
-            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: "30min" })  // ! non null asserted
-            // const token = signAccessToken(user)
+//         if (isMatch) {
+//             const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: "30min" })  // ! non null asserted
+//             // const token = signAccessToken(user)
 
-            resp.json({
-                success: true,
-                token
-            })
-        } else {
-            resp.json({
-                success: false,
-                message: "Invalid credentials ..."
-            })
-        }
+//             resp.json({
+//                 success: true,
+//                 token
+//             })
+//         } else {
+//             resp.json({
+//                 success: false,
+//                 message: "Invalid credentials ..."
+//             })
+//         }
 
-    } catch (error: any) {
-        console.error(error);
-        resp.status(500).json({
-        success: false,
-        message: error.message,
-        });
-    }
+//     } catch (error: any) {
+//         console.error(error);
+//         resp.status(500).json({
+//         success: false,
+//         message: error.message,
+//         });
+//     }
 
-}
+// }
+
 
 // API to get user profile data
 export const getProfile = async (req: Request, resp: Response) =>{
@@ -110,7 +111,7 @@ export const getProfile = async (req: Request, resp: Response) =>{
 
     const { userId } = req.body
 
-    const userData = await userModel.findById(userId).select('-password')
+    const userData = await User.findById(userId).select('-password') as IUSER | null
 
     resp.json({
       success: true,
@@ -142,7 +143,7 @@ export const updateProfile = async (req: Request, resp: Response) => {
       })
     }
 
-    await userModel.findByIdAndUpdate(userId , {name , phone , address: JSON.parse(address), dob , gender})
+    await User.findByIdAndUpdate(userId , {name , phone , address: JSON.parse(address), dob , gender}) as IUSER | null
 
     if (imageFile) {
       
@@ -150,7 +151,7 @@ export const updateProfile = async (req: Request, resp: Response) => {
       const imageUpload = await cloudinary.uploader.upload(imageFile.path, {resource_type: 'image'})
       const imageUrl = imageUpload.secure_url
 
-      await userModel.findByIdAndUpdate(userId, {image: imageUrl})
+      await User.findByIdAndUpdate(userId, {image: imageUrl})
 
     }
 
@@ -176,7 +177,7 @@ export const bookAppointment = async  (req: Request, resp: Response) => {
     
     const { userId, docId, slotDate, slotTime} = req.body
 
-    const docData = await doctorModel.findById(docId).select('-password')
+    const docData = await doctorModel.findById(docId).select('-password') 
 
     if (!docData.available) {
         return resp.json({
@@ -202,7 +203,7 @@ export const bookAppointment = async  (req: Request, resp: Response) => {
        slots_booked[slotDate].push(slotTime)
     }
 
-    const userData = await userModel.findById(userId).select('-password')
+    const userData = await User.findById(userId).select('-password') as IUSER | null
 
     delete docData.slots_booked
 

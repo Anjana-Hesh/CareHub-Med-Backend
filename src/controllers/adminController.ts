@@ -6,7 +6,7 @@ import doctorModel from "../models/doctorModel"
 import jwt from "jsonwebtoken"
 import { error } from "console"
 import appointmentModel from "../models/appointmentModel"
-import userModel from "../models/userModel"
+import {User} from "../models/userModel"
 import { signAccessToken } from "../utils/token"
 
 // Api for adding doctor
@@ -88,38 +88,38 @@ const addDoctor = async (req: Request , resp: Response) => {
 }
 
 // API for the admin login
-const loginAdmin = async (req:Request , resp:Response) => {
+// const loginAdmin = async (req:Request , resp:Response) => {
 
-    try{
+//     try{
 
-        const {email , password} = req.body
+//         const {email , password} = req.body
 
-        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+//         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
             
-            const token = jwt.sign({ email, password }, process.env.JWT_SECRET as string, { expiresIn: "30m" });
-            // const token = signAccessToken()
+//             const token = jwt.sign({ email, password }, process.env.JWT_SECRET as string, { expiresIn: "30m" });
+//             // const token = signAccessToken()
 
-            resp.status(200).json({
-                success:true,
-                message: "Success fully Login ...",
-                token: token
-            })
+//             resp.status(200).json({
+//                 success:true,
+//                 message: "Success fully Login ...",
+//                 token: token
+//             })
 
-        } else {
-            resp.json({
-                success:false,
-                message: "Invalid credensials ..."
-            })
-        }
+//         } else {
+//             resp.json({
+//                 success:false,
+//                 message: "Invalid credensials ..."
+//             })
+//         }
 
-    }catch (error){
-        console.log(error)
-        resp.status(500).json({
-            success:false,
-            message: "Doctor adding error, ", error
-        })
-    }
-}
+//     }catch (error){
+//         console.log(error)
+//         resp.status(500).json({
+//             success:false,
+//             message: "Doctor adding error, ", error
+//         })
+//     }
+// }
 
 // API to get all doctors list for admin panel 
 const allDoctors = async (req: Request , resp: Response) => {
@@ -145,7 +145,7 @@ const appointmentAdmin = async (req: Request , resp: Response) => {
 
     try {
         
-        const appointments = await appointmentModel.find({})
+        const appointments = await (await appointmentModel.find({})).reverse()
 
         resp.json({
             success:true,
@@ -204,7 +204,7 @@ const adminDashboard = async (req: Request, resp: Response) => {
     try {
 
         const doctors = await doctorModel.find({})
-        const users = await userModel.find({})
+        const users = await User.find({})
         const appointments = await appointmentModel.find({})
 
         const dashData = {
@@ -229,4 +229,4 @@ const adminDashboard = async (req: Request, resp: Response) => {
 
 }
 
-export {addDoctor , loginAdmin , allDoctors , appointmentAdmin, appointmentCancel , adminDashboard}
+export {addDoctor , allDoctors , appointmentAdmin, appointmentCancel , adminDashboard}
