@@ -1,108 +1,9 @@
 import { Request, Response } from "express";
-import validator from "validator";
-import bcrypt from "bcrypt";
 import {User , IUSER} from "../models/userModel";
-import jwt from "jsonwebtoken";
 import {v2 as cloudinary} from 'cloudinary'
 import doctorModel from "../models/doctorModel";
 import appointmentModel from "../models/appointmentModel";
-import { signAccessToken } from "../utils/token";
-
-// export const registerUser = async (req: Request, resp: Response) => {
-//   try {
-//     const { name, email, password } = req.body;
-
-//     if (!name || !email || !password) {
-//       return resp.status(400).json({
-//         success: false,
-//         message: "Missing required fields",
-//       });
-//     }
-
-//     if (!validator.isEmail(email)) {
-//       return resp.status(400).json({
-//         success: false,
-//         message: "Enter a valid email",
-//       });
-//     }
-
-//     if (password.length < 8) {
-//       return resp.status(400).json({
-//         success: false,
-//         message: "Enter a strong password (minimum 8 characters)",
-//       });
-//     }
-
-//     // Hash password
-//     const salt = await bcrypt.genSalt(10);
-//     const hashedPassword = await bcrypt.hash(password, salt);
-
-//     const newUser = new userModel({
-//       name,
-//       email,
-//       password: hashedPassword,
-//     });
-
-//     const user = await newUser.save();
-
-//     // Generate JWT
-//     // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: "1d" });
-
-//     resp.status(201).json({
-//       success: true,
-//       // token,
-//     });
-//   } catch (error: any) {
-//     console.error(error);
-//     resp.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
-
-// API for user Login
-// export const loginUser = async (req: Request, resp: Response) => {
-
-//     try {
-
-//         const { email , password} = req.body
-//         const user = await userModel.findOne({email})
-
-//         if (!user) {
-//             return resp.json({
-//             success: false,
-//             message: "user doesn't exist",
-//             });
-//         }
-
-//         const isMatch = await bcrypt.compare(password,user.password)
-        
-//         if (isMatch) {
-//             const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: "30min" })  // ! non null asserted
-//             // const token = signAccessToken(user)
-
-//             resp.json({
-//                 success: true,
-//                 token
-//             })
-//         } else {
-//             resp.json({
-//                 success: false,
-//                 message: "Invalid credentials ..."
-//             })
-//         }
-
-//     } catch (error: any) {
-//         console.error(error);
-//         resp.status(500).json({
-//         success: false,
-//         message: error.message,
-//         });
-//     }
-
-// }
-
+import { sendEmail } from "../config/emailConfig";
 
 // API to get user profile data
 export const getProfile = async (req: Request, resp: Response) =>{
@@ -205,6 +106,10 @@ export const bookAppointment = async  (req: Request, resp: Response) => {
 
     const userData = await User.findById(userId).select('-password') as IUSER | null
 
+    if (!userData) {
+       return resp.status(404).json({ success: false, message: "User not found" });
+    }
+
     delete docData.slots_booked
 
     const appointmentData = {
@@ -223,6 +128,90 @@ export const bookAppointment = async  (req: Request, resp: Response) => {
 
     // save new slots data in docData
     await doctorModel.findByIdAndUpdate(docId,{slots_booked})
+
+   try {
+        const userHtml = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <h2 style="color: #4CAF50;">✅ Appointment Confirmed, ${userData.name}!</h2>
+                <p>Thank you for booking your appointment. Please review the details below:</p>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 30%;">Doctor:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">Dr. ${docData.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Specialization:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${docData.specialization || 'Not specified'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Date:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; color: #007bff;">${slotDate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Time:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; color: #dc3545;">${slotTime}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Appointment ID:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${newAppointment._id}</td>
+                    </tr>
+                </table>
+                <p style="margin-top: 20px; font-size: 12px; color: #888;">*Please bring your ID and be 10 minutes early.</p>
+            </div>
+        `;
+
+        await sendEmail({
+            to: userData.email,
+            subject: `✅ Your Appointment is Confirmed with Dr. ${docData.name}`,
+            html: userHtml,
+        });
+
+    } catch (emailError) {
+        console.error('Failed to send USER booking confirmation email:', emailError);
+    }
+    
+    // --- 2. Email for the Doctor (Wenas Widihata - Different Content) ---
+    try {
+        const doctorHtml = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #007bff; border-radius: 8px;">
+                <h3 style="color: #007bff;">🔔 New Appointment Booked</h3>
+                <p>Dear Dr. ${docData.name},</p>
+                <p>A new appointment has been scheduled for your practice. Please review the details:</p>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 30%;">Patient Name:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${userData.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Patient Contact:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${userData.phone || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Date:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; color: #dc3545;">${slotDate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Time Slot:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; color: #dc3545;">${slotTime}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Amount Due:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${docData.fees}</td>
+                    </tr>
+                </table>
+                <p style="margin-top: 20px; font-style: italic;">This slot has been reserved in your schedule.</p>
+            </div>
+        `;
+
+        await sendEmail({
+            to: docData.email, // Assuming doctorModel has an 'email' field
+            subject: `🔔 NEW Booking: ${slotDate} at ${slotTime} - Patient: ${userData.name}`,
+            html: doctorHtml,
+        });
+
+    } catch (emailError) {
+        console.error('Failed to send DOCTOR notification email:', emailError);
+    }
 
     resp.json({
       success: true,
@@ -290,6 +279,32 @@ export const cancelAppintment = async (req: Request, resp: Response) => {
 
     await doctorModel.findByIdAndUpdate(docId, {slots_booked})
 
+    // ------------------------------------
+    // 📧 SEND APPOINTMENT CANCELLATION EMAIL
+    // ------------------------------------
+    const userData = await User.findById(userId).select('name email') as IUSER | null
+    
+    if (userData) {
+      try {
+          const emailHtml = `
+              <h1>Appointment Cancellation Confirmation</h1>
+              <p>Dear ${userData.name},</p>
+              <p>Your appointment on <strong>${slotDate} at ${slotTime}</strong> has been successfully **cancelled**.</p>
+              <p>If this was a mistake, please book a new appointment.</p>
+          `;
+
+          await sendEmail({
+              to: userData.email, // Assuming IUSER has an 'email' field
+              subject: '❌ Appointment Cancelled',
+              html: emailHtml,
+          });
+
+      } catch (emailError) {
+          // Log the error but do NOT fail the main response, as the cancellation is complete.
+          console.error('Failed to send cancellation confirmation email:', emailError);
+      }
+    }
+
     resp.json({
       success: true,
       message: 'Appointment cancelled'
@@ -304,3 +319,6 @@ export const cancelAppintment = async (req: Request, resp: Response) => {
   }
 
 }
+
+
+
