@@ -4,6 +4,8 @@ import {v2 as cloudinary} from 'cloudinary'
 import doctorModel from "../models/doctorModel";
 import appointmentModel from "../models/appointmentModel";
 import { sendEmail } from "../config/emailConfig";
+import * as crypto from 'crypto';
+import bcrypt from 'bcrypt';
 
 // API to get user profile data
 export const getProfile = async (req: Request, resp: Response) =>{
@@ -128,6 +130,8 @@ export const bookAppointment = async  (req: Request, resp: Response) => {
 
     // save new slots data in docData
     await doctorModel.findByIdAndUpdate(docId,{slots_booked})
+
+    // Send email part -----------------------------
 
    try {
         const userHtml = `
@@ -320,5 +324,197 @@ export const cancelAppintment = async (req: Request, resp: Response) => {
 
 }
 
+const findAccountByEmail = async (email: string) => {
+    let account = await User.findOne({ email });
+    let modelName = 'User';
 
+    if (!account) {
+        account = await doctorModel.findOne({ email });
+        modelName = 'Doctor';
+    }
 
+    if (account) {
+        return { account: account as any, modelName };
+    }
+    
+    return null;
+}
+
+// Forget Password - Generate token and send email
+export const forgetPassword = async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Email is required.' 
+        });
+    }
+
+    try {
+        const result = await findAccountByEmail(email);
+
+        if (!result) {
+            return res.status(200).json({ 
+                success: true, 
+                message: 'If an account with that email exists, a password reset link has been sent.' 
+            });
+        }
+
+        const { account, modelName } = result;
+
+        // Generate simple random token - NO HASHING
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        
+        // Store plain token directly
+        account.passwordResetToken = resetToken;
+        account.passwordResetExpires = Date.now() + 3600000; // 1 hour
+
+        await account.save({ validateBeforeSave: false });
+
+        console.log('✅ Token saved:', resetToken);
+
+        const resetURL = `http://localhost:5173/reset-password/${resetToken}`;
+
+        const resetEmailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                <h2>Password Reset Request</h2>
+                <p>Dear ${account.name || 'User'},</p>
+                <p>Click the button below to reset your password:</p>
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="${resetURL}" 
+                       style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
+                        Reset Password
+                    </a>
+                </p>
+                <p>Or copy this link: ${resetURL}</p>
+                <p>This link expires in 1 hour.</p>
+            </div>
+        `;
+
+        try {
+            await sendEmail({
+                to: account.email,
+                subject: `Password Reset Request`,
+                html: resetEmailHtml,
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Password reset link sent successfully.',
+            });
+        } catch (err) {
+            account.passwordResetToken = undefined;
+            account.passwordResetExpires = undefined;
+            await account.save({ validateBeforeSave: false });
+
+            console.error('Email sending failed:', err);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Error sending email. Please try again later.' 
+            });
+        }
+
+    } catch (error: any) {
+        console.error(error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Server error.' 
+        });
+    }
+};
+
+// Reset Password - Simple token check
+
+export const resetPassword = async (req: Request, res: Response) => {
+    const token = req.headers["x-reset-token"] as string;
+    const { newPassword } = req.body;
+
+    console.log('🔄 Reset password request');
+    console.log('   Token:', token ? `${token.substring(0, 20)}...` : 'None');
+    console.log('   New password length:', newPassword?.length);
+
+    if (!token) {
+        console.log('❌ No token provided');
+        return res.status(400).json({
+            success: false,
+            message: 'Reset token missing.'
+        });
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+        console.log('❌ Invalid password length');
+        return res.status(400).json({
+            success: false,
+            message: 'Password must be at least 6 characters long.'
+        });
+    }
+
+    try {
+        // Find account
+        console.log('🔍 Searching for account with token...');
+        let account = await User.findOne({
+            passwordResetToken: token,
+            passwordResetExpires: { $gt: Date.now() }
+        });
+
+        let accountType = 'User';
+        
+        if (!account) {
+            console.log('🔍 Not found in User, searching Doctor...');
+            account = await doctorModel.findOne({
+                passwordResetToken: token,
+                passwordResetExpires: { $gt: Date.now() }
+            });
+            accountType = 'Doctor';
+        }
+
+        if (!account) {
+            console.log('❌ Token not found or expired');
+            return res.status(400).json({
+                success: false,
+                message: "Token is invalid or expired."
+            });
+        }
+
+        console.log(`✅ ${accountType} account found:`, account.email);
+
+        // Method 1: Using pre-save middleware
+        console.log('🔧 Setting new password...');
+        account.password = newPassword;
+        account.passwordResetToken = undefined;
+        account.passwordResetExpires = undefined;
+        
+        console.log('💾 Saving account...');
+        const savedAccount = await account.save();
+        
+        // Verify password was hashed
+        const savedPassword = (savedAccount as any).password;
+        console.log('🔍 Saved password starts with:', savedPassword.substring(0, 10));
+        console.log('🔍 Is password hashed?', savedPassword.startsWith('$2b$'));
+        
+        if (!savedPassword.startsWith('$2b$')) {
+            console.warn('⚠️ Password was NOT hashed!');
+            // Fallback: Hash manually and save again
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+            savedAccount.password = hashedPassword;
+            await savedAccount.save({ validateBeforeSave: false });
+            console.log('✅ Password manually hashed and saved');
+        }
+
+        console.log('✅ Password reset successful');
+
+        return res.status(200).json({
+            success: true,
+            message: "Password updated successfully."
+        });
+
+    } catch (err: any) {
+        console.error('❌ Reset password error:', err);
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Server error."
+        });
+    }
+};

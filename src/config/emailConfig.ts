@@ -19,7 +19,7 @@ interface MailOptions {
 export async function sendEmail(options: MailOptions): Promise<void> {
   try {
     const info = await transporter.sendMail({
-      from: `Your App Name <${process.env.EMAIL_USER}>`,
+      from: `Care Hub Med -> <${process.env.EMAIL_USER}>`,
       to: options.to,
       subject: options.subject,
       html: options.html,
