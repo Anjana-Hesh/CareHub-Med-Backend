@@ -129,6 +129,8 @@ export const bookAppointment = async  (req: Request, resp: Response) => {
     // save new slots data in docData
     await doctorModel.findByIdAndUpdate(docId,{slots_booked})
 
+    // Send email part -----------------------------
+
    try {
         const userHtml = `
             <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
