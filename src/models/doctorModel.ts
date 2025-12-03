@@ -14,6 +14,8 @@ const doctorSchema = new mongoose.Schema({
     address:{type:Object, required:true},
     date:{type:Number, required:true},
     slots_booked:{type:Object,default:{}},
+    passwordResetToken: { type: String },  // Add this
+    passwordResetExpires: { type: Number }  // Add this
 },{minimize:false})   // we can empty object pass because this false
 
 const doctorModel = mongoose.models.doctor || mongoose.model('doctor', doctorSchema)
