@@ -1,5 +1,5 @@
 import express from 'express'
-import { addDoctor, adminDashboard, allDoctors, appointmentAdmin, appointmentCancel, loginAdmin } from '../controllers/adminController'
+import { addDoctor, adminDashboard, allDoctors, appointmentAdmin, appointmentCancel } from '../controllers/adminController'
 import upload from '../middlewares/multer'
 import authAdmin from '../middlewares/authAdmin'
 import {changeAvailability }from '../controllers/doctorController'
