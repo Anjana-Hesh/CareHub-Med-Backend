@@ -1,5 +1,5 @@
 import express from 'express'
-import { bookAppointment, cancelAppintment, forgetPassword, getProfile, listAppointment, loginUser, resetPassword, updateProfile } from '../controllers/userController'
+import { bookAppointment, cancelAppintment, forgetPassword, getProfile, listAppointment, resetPassword, updateProfile } from '../controllers/userController'
 import authUser from '../middlewares/authUser'
 import upload from '../middlewares/multer'
 import { login, refreshToken, registerUser } from '../controllers/authcontroller'
