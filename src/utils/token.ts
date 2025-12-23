@@ -10,7 +10,7 @@ export const signAccessToken = (user:IUSER): string => {
             roles: user.roles
         },
         JWT_SECRET, {
-        expiresIn: "30m"
+        expiresIn: "50m"
   })
 }
 
