@@ -279,7 +279,14 @@ export const cancelAppintment = async (req: Request, resp: Response) => {
 
     let slots_booked = doctorData.slots_booked
 
-    slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
+    // slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
+
+    if (slots_booked?.[slotDate]) {
+        slots_booked[slotDate] = slots_booked[slotDate].filter(
+            (e: string) => e !== slotTime
+        );
+    }
+
 
     await doctorModel.findByIdAndUpdate(docId, {slots_booked})
 
