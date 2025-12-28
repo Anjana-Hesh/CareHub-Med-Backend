@@ -20,7 +20,7 @@ export interface IUSER extends Document {
     dob?: string
     phone?: string
     roles?: Role[]
-    passwordResetToken?: string  // Add this
+    passwordResetToken?: string
     passwordResetExpires?: number
     comparePassword(candidatePassword: string): Promise<boolean>
 }
@@ -35,8 +35,8 @@ const userSchema = new mongoose.Schema<IUSER>({
     dob:{type:String, default:"Not selected"},
     phone:{type:String, default:"0000000000"},
     roles:{type: [String], enum: Object.values(Role), default: [Role.USER],
-    passwordResetToken: { type: String },  // Add this
-    passwordResetExpires: { type: Number }  // Add this
+    passwordResetToken: { type: String },
+    passwordResetExpires: { type: Number }
   }
 })
 

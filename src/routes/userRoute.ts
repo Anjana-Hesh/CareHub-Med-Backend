@@ -2,7 +2,7 @@ import express from 'express'
 import { bookAppointment, cancelAppintment, forgetPassword, getProfile, listAppointment, resetPassword, updateProfile } from '../controllers/userController'
 import authUser from '../middlewares/authUser'
 import upload from '../middlewares/multer'
-import { login, refreshToken, registerUser } from '../controllers/authcontroller'
+import { googleLogin, login, refreshToken, registerUser } from '../controllers/authcontroller'
 
 const userRouter = express.Router()
 
@@ -16,5 +16,6 @@ userRouter.get('/appointments', authUser, listAppointment)
 userRouter.post('/cancel-appointment', authUser, cancelAppintment)
 userRouter.post('/forget-password', forgetPassword);
 userRouter.put('/reset-password', resetPassword);
+userRouter.post('/google-login', googleLogin)
 
 export default userRouter
