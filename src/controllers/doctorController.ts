@@ -3,7 +3,6 @@ import doctorModel from "../models/doctorModel"
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import appointmentModel from "../models/appointmentModel"
-import { signAccessToken } from "../utils/token"
 
 export const changeAvailability = async (req: Request,resp: Response) => {
     try {

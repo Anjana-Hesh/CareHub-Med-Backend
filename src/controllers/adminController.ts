@@ -3,10 +3,8 @@ import validator from "validator"
 import bcrypt from 'bcrypt'
 import {v2 as cloudinary} from "cloudinary"
 import doctorModel from "../models/doctorModel"
-import jwt from "jsonwebtoken"
 import appointmentModel from "../models/appointmentModel"
 import {User} from "../models/userModel"
-import { signAccessToken } from "../utils/token"
 
 // Api for adding doctor
 const addDoctor = async (req: Request , resp: Response) => {
@@ -132,7 +130,21 @@ const appointmentCancel = async (req: Request, resp: Response) => {
 
     const { appointmentId } = req.body
 
+    if (!appointmentId) {
+      return resp.status(400).json({
+        success: false,
+        message: 'Appointment ID is required',
+      });
+    }
+
     const appointmentData = await appointmentModel.findById(appointmentId)
+
+    if (!appointmentData) {
+      return resp.status(404).json({
+        success: false,
+        message: 'Appointment not found',
+      });
+    }
 
     await appointmentModel.findByIdAndUpdate(appointmentId, {cancelled: true})
 
@@ -141,9 +153,30 @@ const appointmentCancel = async (req: Request, resp: Response) => {
 
     const doctorData = await doctorModel.findById(docId)
 
-    let slots_booked = doctorData.slots_booked
+    if (!doctorData) {
+      return resp.status(404).json({
+        success: false,
+        message: 'Doctor not found',
+      });
+    }
 
-    slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
+    // let slots_booked = doctorData.slots_booked
+
+    // slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
+
+    const slots_booked: Record<string, string[]> =
+      doctorData.slots_booked || {};
+
+    if (slots_booked[slotDate]) {
+      slots_booked[slotDate] = slots_booked[slotDate].filter(
+        (time: string) => time !== slotTime
+      );
+
+      // Cleanup empty date key
+      if (slots_booked[slotDate].length === 0) {
+        delete slots_booked[slotDate];
+      }
+    }
 
     await doctorModel.findByIdAndUpdate(docId, {slots_booked})
 

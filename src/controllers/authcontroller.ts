@@ -154,8 +154,8 @@ export const login = async (req: Request, res: Response) => {
 
     if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
       const admin = { _id: "admin_id", roles: [Role.ADMIN] };
-      const token = signAccessToken(admin);
-      const refresh_token = signRefreshToken(admin)
+      const token = signAccessToken(admin as any);
+      const refresh_token = signRefreshToken(admin as any)
       return res.status(200).json({
          success: true, 
          message: "Admin login successful", 
@@ -175,8 +175,9 @@ export const login = async (req: Request, res: Response) => {
         message: "Invalid credentials" 
       });
 
-        const token = signAccessToken({ _id: doctor._id, roles: [Role.DOCTOR] });
-        const refresh_token = signRefreshToken({ _id: doctor._id, roles: [Role.DOCTOR] })
+        const doc = { _id: doctor._id, roles: [Role.DOCTOR] }; 
+        const token = signAccessToken(doc as any);
+        const refresh_token = signRefreshToken(doc as any)
         
         return res.status(200).json({ 
           success: true, 
