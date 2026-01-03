@@ -1,4 +1,4 @@
-import * as nodemailer from 'nodemailer'; // Send email ---- (Nodemailer librarynpm install --save-dev @types/nodemailer)
+import * as nodemailer from 'nodemailer'; // Send email ---- (Nodemailer library npm install --save-dev @types/nodemailer)
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
