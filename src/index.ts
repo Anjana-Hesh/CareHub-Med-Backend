@@ -18,6 +18,7 @@ app.use(express.json())
 app.use(cors())
 
 // api endpoints
+app.get('/', (req, resp) => resp.send('CareHub Med Backend is running...'))
 app.use('/api/v1/admin', addminRouter)  // localhost:5000/api/v1/addmin/add-doctor
 app.use('/api/v1/doctor' , doctorRouter)
 app.use('/api/v1/user', userRouter)
