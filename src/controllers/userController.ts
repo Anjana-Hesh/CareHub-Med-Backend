@@ -381,7 +381,8 @@ export const forgetPassword = async (req: Request, res: Response) => {
 
         console.log('✅ Token saved:', resetToken);
 
-        const resetURL = `http://localhost:5173/reset-password/${resetToken}`;
+        // const resetURL = `http://localhost:5173/reset-password/${resetToken}`;
+        const resetURL = `https://care-hub-med.vercel.app/reset-password/${resetToken}`;
 
         const resetEmailHtml = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
