@@ -5,6 +5,102 @@ import {v2 as cloudinary} from "cloudinary"
 import doctorModel from "../models/doctorModel"
 import appointmentModel from "../models/appointmentModel"
 import {User} from "../models/userModel"
+// import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+
+// export const generateDoctorDescription = async (req: Request, resp: Response) => {
+//   try {
+//     const { name, speciality, experience, degree } = req.body;
+
+//     if (!name || !speciality || !experience || !degree) {
+//       return resp.status(400).json({
+//         success: false,
+//         message: "Missing required fields",
+//       });
+//     }
+
+//     const prompt = `
+// Write a professional doctor profile description between 50 and 100 words.
+
+// Doctor Name: ${name}
+// Speciality: ${speciality}
+// Experience: ${experience}
+// Qualifications: ${degree}
+
+// Tone: professional, patient-friendly, trustworthy.
+// `;
+
+//     const completion = await openai.chat.completions.create({
+//       model: "gpt-4o-mini",
+//       messages: [{ role: "user", content: prompt }],
+//       temperature: 0.6,
+//     });
+
+//     resp.json({
+//       success: true,
+//       description: completion.choices[0].message.content,
+//     });
+
+//   } catch (error: any) {
+//     console.error(error);
+//     resp.status(500).json({
+//       success: false,
+//       message: "AI generation failed",
+//     });
+//   }
+// };
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
+export const generateDoctorDescription = async (req: Request, resp: Response) => {
+  try {
+    const { name, speciality, experience, degree } = req.body;
+
+    if (!name || !speciality || !experience || !degree) {
+      return resp.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    const prompt = `
+      Write a professional doctor profile description between 50 and 100 words.
+      Doctor Name: ${name}
+      Speciality: ${speciality}
+      Experience: ${experience} years
+      Qualifications: ${degree}
+      Tone: professional, patient-friendly, trustworthy.
+    `;
+
+    const result = await model.generateContent(prompt);
+    
+    // safe check for response
+    if (result && result.response) {
+        const text = result.response.text();
+        return resp.json({
+            success: true,
+            description: text,
+        });
+    } else {
+        throw new Error("No response from AI");
+    }
+
+  } catch (error: any) {
+    console.error("Gemini Error Details:", error);
+    resp.status(500).json({
+      success: false,
+      message: "AI generation failed. Please try again later.",
+      error: error.message
+    });
+  }
+};
 
 // Api for adding doctor
 const addDoctor = async (req: Request , resp: Response) => {
