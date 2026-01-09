@@ -256,10 +256,6 @@ const appointmentCancel = async (req: Request, resp: Response) => {
       });
     }
 
-    // let slots_booked = doctorData.slots_booked
-
-    // slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
-
     const slots_booked: Record<string, string[]> =
       doctorData.slots_booked || {};
 
